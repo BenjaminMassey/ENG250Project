@@ -11,19 +11,25 @@ var left_key = keyboard(37);	var up_key = keyboard(38);
 var right_key = keyboard(39);	var down_key = keyboard(40);
 var x_key = keyboard(88);		var z_key = keyboard(90);
 
-// Setup something to show and something to control it
-var centerText = new PIXI.Text("I'm handled through display");
+// Setup main character
+var mainChar = PIXI.Sprite.fromImage('content/MainCharacter.png');
+mainChar.anchor.set(0.55); // Center anchor
+mainChar.scale.x = 0.2;		mainChar.scale.y = 0.2; // Set size
+mainChar.x = appWidth / 2;	mainChar.y = appHeight / 2; // Center to screen
+app.stage.addChild(mainChar); // Add to app panel
+mainChar.walking = false; // Whether currently walking
+mainChar.direction = "right"; // What direction facing
+mainChar.walkFrame = 0; // Frame to stop walking on
 
-function display(message) {
-	centerText.destroy();
-	centerText = new PIXI.Text(message);
-	centerText.anchor.set(0.5);
-	centerText.x = app.screen.width / 2;
-	centerText.y = app.screen.height / 2;
-	app.stage.addChild(centerText);
+// Basic unit functions
+var walkables = [mainChar];
+function startWalk(character, direction) {
+	if (!character.walking) {
+		character.walking = true;
+		character.direction = direction;
+		character.walkFrame = globalTimer + 20;
+	}
 }
-
-display("Press a key!");
 
 // Main loop
 app.ticker.add(function(delta) {
@@ -31,29 +37,43 @@ app.ticker.add(function(delta) {
 		if((globalTimer % 60) == 0) { // Every second
 			//console.log("DEBUG INFO");
 		}
+		// Handle keys
 		// Left key
 		if (leftKey.clicked || left_key.isDown) {
-			display("pressed left");
+			startWalk(mainChar, "left");
 		}
 		// Up key
 		if (upKey.clicked || up_key.isDown) {
-			display("pressed up");
+			startWalk(mainChar, "up");
 		}
 		// Right key
 		if (rightKey.clicked || right_key.isDown) {
-			display("pressed right");
+			startWalk(mainChar, "right");
 		}
 		// Down key
 		if (downKey.clicked || down_key.isDown) {
-			display("pressed down");
+			startWalk(mainChar, "down");
 		}
 		// X key
 		if (xKey.clicked || x_key.isDown) {
-			display("pressed x");
+			
 		}
 		// Z key
 		if (zKey.clicked || z_key.isDown) {
-			display("pressed z");
+			
+		}
+		
+		// Handle walking
+		for (var i = 0; i < walkables.length; i++) {
+			if (walkables[i].walking){
+				if (globalTimer < walkables[i].walkFrame){
+					if (walkables[i].direction == "left") { walkables[i].x -= 2.5; }
+					if (walkables[i].direction == "up")   { walkables[i].y -= 2.5; }
+					if (walkables[i].direction == "right"){ walkables[i].x += 2.5; }
+					if (walkables[i].direction == "down") { walkables[i].y += 2.5; }
+				}
+				else { walkables[i].walking = false; }
+			}
 		}
 		
 		// Unclick (mobile vitual) keys for next frame - may be irrelevant
@@ -61,7 +81,7 @@ app.ticker.add(function(delta) {
 		for (var i = 0; i < keys.length; i++) {
 			keys[i].clicked = false;
 		}
-		// Simple global timer of frame count in case needed
+		// Simple global timer of frame count
 		globalTimer++;
 	}
 });
