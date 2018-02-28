@@ -12,9 +12,20 @@ var right_key = keyboard(39);	var down_key = keyboard(40);
 var x_key = keyboard(88);		var z_key = keyboard(90);
 
 // Setup main character
-var mainChar = PIXI.Sprite.fromImage('content/MainCharacter.png');
+var mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
+mainChar.textures = {};
+mainChar.textures.up = [];
+mainChar.textures.down = [];
+mainChar.textures.right = [];
+mainChar.textures.left = [];
+for (var i = 0; i < 9; i++){
+	mainChar.textures.up[i] = PIXI.Texture.fromImage("/content/characters/main/up" + i + ".png");
+	mainChar.textures.down[i] = PIXI.Texture.fromImage("/content/characters/main/down" + i + ".png");
+	mainChar.textures.right[i] = PIXI.Texture.fromImage("/content/characters/main/right" + i + ".png");
+	mainChar.textures.left[i] = PIXI.Texture.fromImage("/content/characters/main/left" + i + ".png");
+}
 mainChar.anchor.set(0.55); // Center anchor
-mainChar.scale.x = 0.2;		mainChar.scale.y = 0.2; // Set size
+mainChar.scale.x = 1;		mainChar.scale.y = 1; // Set size
 mainChar.x = appWidth / 2;	mainChar.y = appHeight / 2; // Center to screen
 app.stage.addChild(mainChar); // Add to app panel
 mainChar.walking = false; // Whether currently walking
@@ -27,7 +38,8 @@ function startWalk(character, direction) {
 	if (!character.walking) {
 		character.walking = true;
 		character.direction = direction;
-		character.walkFrame = globalTimer + 20;
+		character.walkStart = globalTimer;
+		character.walkEnd = globalTimer + 30;
 	}
 }
 
@@ -66,11 +78,31 @@ app.ticker.add(function(delta) {
 		// Handle walking
 		for (var i = 0; i < walkables.length; i++) {
 			if (walkables[i].walking){
-				if (globalTimer < walkables[i].walkFrame){
-					if (walkables[i].direction == "left") { walkables[i].x -= 2.5; }
-					if (walkables[i].direction == "up")   { walkables[i].y -= 2.5; }
-					if (walkables[i].direction == "right"){ walkables[i].x += 2.5; }
-					if (walkables[i].direction == "down") { walkables[i].y += 2.5; }
+				if (globalTimer < walkables[i].walkEnd){
+					var separations = walkables[i].textures.up.length; // Number of frames in walk animation
+					var amount = Math.round((walkables[i].walkEnd - walkables[i].walkStart) / separations);
+					// for+if makes it go through once for every animation frame j
+					for (var j = 0; j < separations; j++) {
+						if (globalTimer == (walkables[i].walkStart) + (j*amount)) {
+							if (walkables[i].direction == "left") { 
+								walkables[i].x -= 30 / separations;
+								walkables[i].texture = walkables[i].textures.left[j];
+							}
+							if (walkables[i].direction == "up")   { 
+								walkables[i].y -= 30 / separations;
+								walkables[i].texture = walkables[i].textures.up[j];
+							}
+							if (walkables[i].direction == "right"){ 
+								walkables[i].x += 30 / separations;
+								walkables[i].texture = walkables[i].textures.right[j];
+							}
+							if (walkables[i].direction == "down") { 
+								walkables[i].y += 30 / separations;
+								walkables[i].texture = walkables[i].textures.down[j];
+							}
+						}
+					}
+					
 				}
 				else { walkables[i].walking = false; }
 			}

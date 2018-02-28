@@ -18,12 +18,12 @@ if(window.mobilecheck()) {
 	document.body.appendChild(mobileButtonPanel.view);
 
 	// Setup our keys from images
-	var upKey = PIXI.Sprite.fromImage('content/UpKey.png');
-	var downKey = PIXI.Sprite.fromImage('content/DownKey.png');
-	var rightKey = PIXI.Sprite.fromImage('content/RightKey.png');
-	var leftKey = PIXI.Sprite.fromImage('content/LeftKey.png');
-	var xKey = PIXI.Sprite.fromImage('content/XKey.png');
-	var zKey = PIXI.Sprite.fromImage('content/ZKey.png');
+	var upKey = PIXI.Sprite.fromImage('content/keys/UpKey.png');
+	var downKey = PIXI.Sprite.fromImage('content/keys/DownKey.png');
+	var rightKey = PIXI.Sprite.fromImage('content/keys/RightKey.png');
+	var leftKey = PIXI.Sprite.fromImage('content/keys/LeftKey.png');
+	var xKey = PIXI.Sprite.fromImage('content/keys/XKey.png');
+	var zKey = PIXI.Sprite.fromImage('content/keys/ZKey.png');
 
 	// Setup basics for keys in loop
 	var keys = [upKey, downKey, rightKey, leftKey, xKey, zKey];
