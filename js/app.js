@@ -8,34 +8,94 @@ var activeTimer = 0; // Updated same as global - but only while active
 var running = true;
 var lastPress = 0; // Last frame a key was pressed
 
+// FOR SOME REASON THIS DUMB THING CAN'T SEE OTHER FILES SO
+// I'M PUTTING ALL THE FUNCTIONS HERE AAAAAAAAAAAAAAAAAAAAA
+function generateFromSpritesheet(width, height, divX, divY, pathname) {
+	var up = [];
+	var down = [];
+	var right = [];
+	var left = [];
+	var spriteSheet = new PIXI.Texture.fromImage(pathname);
+	var rectangle;
+	for (var i = 0; i < divX; i++) {
+		rectangle = new PIXI.Rectangle((i * (width / divX)), 0, (width/divX), (height/divY));
+		up[i] = new PIXI.Texture(spriteSheet, rectangle);
+		rectangle = new PIXI.Rectangle((i * (width / divX)), (height/divY), (width/divX), (height/divY));
+		right[i] = new PIXI.Texture(spriteSheet, rectangle);
+		rectangle = new PIXI.Rectangle((i * (width / divX)), (2*height/divY), (width/divX), (height/divY));
+		down[i] = new PIXI.Texture(spriteSheet, rectangle);
+		rectangle = new PIXI.Rectangle((i * (width / divX)), (3*height/divY), (width/divX), (height/divY));
+		left[i] = new PIXI.Texture(spriteSheet, rectangle);
+	}
+	var character = new PIXI.Sprite(right[0]);
+	character.textures = {};
+	character.textures.up = up;
+	character.textures.down = down;
+	character.textures.right = right;
+	character.textures.left = left;
+	return character;
+}
+function setupMainChar() {	
+	mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
+	mainChar.textures = {};
+	mainChar.textures.up = [];
+	mainChar.textures.down = [];
+	mainChar.textures.right = [];
+	mainChar.textures.left = [];
+	for (var i = 0; i < 9; i++) {
+		mainChar.textures.up[i] = PIXI.Texture.fromImage("/content/characters/main/up" + i + ".png");
+		mainChar.textures.down[i] = PIXI.Texture.fromImage("/content/characters/main/down" + i + ".png");
+		mainChar.textures.right[i] = PIXI.Texture.fromImage("/content/characters/main/right" + i + ".png");
+		mainChar.textures.left[i] = PIXI.Texture.fromImage("/content/characters/main/left" + i + ".png");
+	}
+	mainChar.anchor.set(0.5); // Center anchor
+	mainChar.scale.x = 1;		mainChar.scale.y = 1; // Set size
+	mainChar.x = appWidth / 2;	mainChar.y = appHeight / 2; // Center to screen
+	app.stage.addChild(mainChar); // Add to app panel
+	mainChar.walking = false; // Whether currently walking
+	mainChar.direction = "right"; // What direction facing
+	mainChar.walkFrame = 0; // Frame to stop walking on
+}
+
 // Setup keys (see keyboard.js and https://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000520.html)
 var left_key = keyboard(37);	var up_key = keyboard(38);
 var right_key = keyboard(39);	var down_key = keyboard(40);
 var x_key = keyboard(88);		var z_key = keyboard(90);
 
 // Setup main character
-var mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
-mainChar.textures = {};
-mainChar.textures.up = [];
-mainChar.textures.down = [];
-mainChar.textures.right = [];
-mainChar.textures.left = [];
-for (var i = 0; i < 9; i++){
-	mainChar.textures.up[i] = PIXI.Texture.fromImage("/content/characters/main/up" + i + ".png");
-	mainChar.textures.down[i] = PIXI.Texture.fromImage("/content/characters/main/down" + i + ".png");
-	mainChar.textures.right[i] = PIXI.Texture.fromImage("/content/characters/main/right" + i + ".png");
-	mainChar.textures.left[i] = PIXI.Texture.fromImage("/content/characters/main/left" + i + ".png");
+var mainChar = {};
+setupMainChar(); // See mainchar.js
+
+// Setup kitty kat :3
+//var cat = {};
+var cat = generateFromSpritesheet(96, 192, 3, 4, "content/characters/cat/spritesheet.png");
+cat.anchor.set(0.5);
+cat.scale.x = 1.3;
+cat.scale.y = 1.3;
+cat.x = appWidth / 3;
+cat.y = appHeight / 4;
+app.stage.addChild(cat);
+cat.walking = false;
+cat.direction = "right";
+cat.WalkFrame = 0;
+cat.handleWalk = function() {
+	if (!this.walking) {
+		var num = Math.floor(Math.random() * 4);
+		var direction = ["up","down","left","right"][num];
+		console.log(direction);
+		startWalk(this, direction);
+		this.walkStart += 60;
+		this.walkEnd += 60;
+	}
 }
-mainChar.anchor.set(0.5); // Center anchor
-mainChar.scale.x = 1;		mainChar.scale.y = 1; // Set size
-mainChar.x = appWidth / 2;	mainChar.y = appHeight / 2; // Center to screen
-app.stage.addChild(mainChar); // Add to app panel
-mainChar.walking = false; // Whether currently walking
-mainChar.direction = "right"; // What direction facing
-mainChar.walkFrame = 0; // Frame to stop walking on
+
+// Healer character
+//var healer = {};
+//setupHealer; // See healer.js
+
 
 // Basic unit functions
-var walkables = [mainChar];
+var walkables = [mainChar, cat];
 function startWalk(character, direction) {
 	if (!character.walking) {
 		character.walking = true;
@@ -50,7 +110,7 @@ app.ticker.add(function(delta) {
 	if (running) {
 		
 		if((globalTimer % 60) == 0) { // Every second
-			//console.log("DEBUG INFO");
+			// DEBUG WHATEVER
 		}
 
 		if (textBox.active) {
@@ -61,10 +121,14 @@ app.ticker.add(function(delta) {
 			}
 		}
 		else {
-			// Handle keysW
+			// NPC idles
+			cat.handleWalk();
+			
+			// Bad exception for active frame and global frame desync
 			if (activeTimer < lastPress) {
 				lastPress = 0;
 			}
+			// Handle player input
 			if (activeTimer > lastPress + 0) {
 				// Left key
 				if (leftKey.clicked || left_key.isDown) {
@@ -123,17 +187,23 @@ app.ticker.add(function(delta) {
 									walkables[i].texture = walkables[i].textures.down[j];
 								}
 								// Handle screen bounds
-								if (walkables[i].x > appWidth) {
-									walkables[i].x = appWidth;
+								var buffer = {
+									l: walkables[i].texture.width / 3.5,
+									r: walkables[i].texture.width / 3.5,
+									t: walkables[i].texture.height / 3.5,
+									b: walkables[i].texture.height / 2
+								};
+								if (walkables[i].x > appWidth - buffer.r) {
+									walkables[i].x = appWidth - buffer.r;
 								} 
-								if (walkables[i].x < 0) {
-									walkables[i].x = 0;
+								if (walkables[i].x < buffer.l) {
+									walkables[i].x = buffer.l;
 								}
-								if (walkables[i].y > appHeight) {
-									walkables[i].y = appHeight;
+								if (walkables[i].y > appHeight - buffer.b) {
+									walkables[i].y = appHeight - buffer.b;
 								}
-								if (walkables[i].y < 0) {
-									walkables[i].y = 0;
+								if (walkables[i].y < buffer.t) {
+									walkables[i].y = buffer.t;
 								}
 							}
 						}
@@ -142,17 +212,16 @@ app.ticker.add(function(delta) {
 					else { walkables[i].walking = false; }
 				}
 			}
-			
+			// Simple timer for active frames
 			activeTimer++;
 			
 		}
 		
 		// Unclick (mobile vitual) keys for next frame - may be irrelevant
-			var keys = [upKey, downKey, rightKey, leftKey, xKey, zKey];
-			for (var i = 0; i < keys.length; i++) {
-				keys[i].clicked = false;
-			}
-			
+		var keys = [upKey, downKey, rightKey, leftKey, xKey, zKey];
+		for (var i = 0; i < keys.length; i++) {
+			keys[i].clicked = false;
+		}
 			
 		// Simple global timer of frame count
 		globalTimer++;
