@@ -37,6 +37,7 @@ function generateFromSpritesheet(width, height, divX, divY, pathname) {
 }
 function setupMainChar() {	
 	mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
+	mainChar.tag = "main";
 	mainChar.textures = {};
 	mainChar.textures.up = [];
 	mainChar.textures.down = [];
@@ -56,6 +57,7 @@ function setupMainChar() {
 	mainChar.direction = "right"; // What direction facing
 	mainChar.walkFrame = 0; // Frame to stop walking on
 }
+// END OF GROSS ALL FUNCTIONS IN HERE BS
 
 // Setup keys (see keyboard.js and https://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000520.html)
 var left_key = keyboard(37);	var up_key = keyboard(38);
@@ -64,11 +66,12 @@ var x_key = keyboard(88);		var z_key = keyboard(90);
 
 // Setup main character
 var mainChar = {};
-setupMainChar(); // See mainchar.js
+setupMainChar(); // See above
 
 // Setup kitty kat :3
 //var cat = {};
 var cat = generateFromSpritesheet(96, 192, 3, 4, "content/characters/cat/spritesheet.png");
+cat.tag = "cat";
 cat.anchor.set(0.5);
 cat.scale.x = 1.3;
 cat.scale.y = 1.3;
@@ -82,7 +85,6 @@ cat.handleWalk = function() {
 	if (!this.walking) {
 		var num = Math.floor(Math.random() * 4);
 		var direction = ["up","down","left","right"][num];
-		console.log(direction);
 		startWalk(this, direction);
 		this.walkStart += 60;
 		this.walkEnd += 60;
@@ -95,6 +97,7 @@ cat.handleWalk = function() {
 
 
 // Basic unit functions
+var collisionChars = [mainChar, cat];
 var walkables = [mainChar, cat];
 function startWalk(character, direction) {
 	if (!character.walking) {
@@ -129,7 +132,7 @@ app.ticker.add(function(delta) {
 				lastPress = 0;
 			}
 			// Handle player input
-			if (activeTimer > lastPress + 0) {
+			if (activeTimer > lastPress + 10) {
 				// Left key
 				if (leftKey.clicked || left_key.isDown) {
 					lastPress = activeTimer;
@@ -170,6 +173,7 @@ app.ticker.add(function(delta) {
 						// for+if makes it go through once for every animation frame j
 						for (var j = 0; j < separations; j++) {
 							if (activeTimer == (walkables[i].walkStart) + (j*amount)) {
+								var start = {x: walkables[i].x, y: walkables[i].y};
 								if (walkables[i].direction == "left") { 
 									walkables[i].x -= 30 / separations;
 									walkables[i].texture = walkables[i].textures.left[j];
@@ -186,6 +190,18 @@ app.ticker.add(function(delta) {
 									walkables[i].y += 30 / separations;
 									walkables[i].texture = walkables[i].textures.down[j];
 								}
+								// Handle other character collision
+								for (var k = 0; k < collisionChars.length; k++) {
+									if (walkables[i] != collisionChars[k]) {
+										// See hitdetection.js
+										var collided = hitTestRectangle(walkables[i], collisionChars[k]);
+										if (collided){
+											walkables[i].x = start.x;
+											walkables[i].y = start.y;
+										}
+									}
+								}
+								
 								// Handle screen bounds
 								var buffer = {
 									l: walkables[i].texture.width / 3.5,
