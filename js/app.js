@@ -1,4 +1,5 @@
 // Setup app
+var debug = true;
 var appWidth = 800;
 var appHeight = 650;
 var app = new PIXI.Application(appWidth, appHeight, {backgroundColor : 0x1099bb});
@@ -156,10 +157,25 @@ function startWalk(character, direction) {
 		character.walkEnd = activeTimer + 30;
 	}
 }
+var debugText = new PIXI.Text("Debug");
+function displayDebugText(message) {
+	debugText.destroy();
+	debugText = new PIXI.Text(message);
+	debugText.anchor.set(0.5);
+	debugText.x = appWidth * 0.15;
+	debugText.y = appHeight * 0.1;
+	app.stage.addChild(debugText);
+}
 
 // Main loop
 app.ticker.add(function(delta) {
 	if (running) {
+		
+		if (debug) {
+			displayDebugText("Global Timer: " + globalTimer + "\n" +
+							 "Active Timer: " + activeTimer + "\n" +
+							 "Last Press: " + lastPress);
+		}
 		
 		if((globalTimer % 60) == 0) { // Every second
 			// DEBUG WHATEVER
@@ -177,9 +193,9 @@ app.ticker.add(function(delta) {
 			cat.handleWalk();
 			skeleton.handleWalk();
 			
-			// Bad exception for active frame and global frame desync
+			// For switching from textbox interaction (where globalTimer was used)
 			if (activeTimer < lastPress) {
-				lastPress = 0;
+				lastPress = activeTimer;
 			}
 			// Handle player input
 			if (activeTimer > lastPress + 10) {
@@ -213,7 +229,7 @@ app.ticker.add(function(delta) {
 					lastPress = activeTimer;
 					var interact = mainChar.checkInteraction();
 					if (interact != "None") {
-						//lastPress = globalTimer + 30; // Awkward handling of z being used both to interact and advance textbox
+						lastPress = globalTimer; // Going into textbox interaction, which uses globalTimer
 						if (interact == "cat") {
 							textBox.create(["Meow!"])
 						}
