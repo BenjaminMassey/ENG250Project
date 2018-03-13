@@ -10,7 +10,7 @@ var lastPress = 0; // Last frame a key was pressed
 
 // FOR SOME REASON THIS DUMB THING CAN'T SEE OTHER FILES SO
 // I'M PUTTING ALL THE FUNCTIONS HERE AAAAAAAAAAAAAAAAAAAAA
-function generateFromSpritesheet(width, height, divX, divY, pathname) {
+function generateFromSpritesheet(startX, startY, width, height, divX, divY, pathname) {
 	var up = [];
 	var down = [];
 	var right = [];
@@ -18,13 +18,13 @@ function generateFromSpritesheet(width, height, divX, divY, pathname) {
 	var spriteSheet = new PIXI.Texture.fromImage(pathname);
 	var rectangle;
 	for (var i = 0; i < divX; i++) {
-		rectangle = new PIXI.Rectangle((i * (width / divX)), 0, (width/divX), (height/divY));
+		rectangle = new PIXI.Rectangle(startX + (i * (width / divX)), startY, (width/divX), (height/divY));
 		up[i] = new PIXI.Texture(spriteSheet, rectangle);
-		rectangle = new PIXI.Rectangle((i * (width / divX)), (height/divY), (width/divX), (height/divY));
+		rectangle = new PIXI.Rectangle(startX + (i * (width / divX)), startY + (height/divY), (width/divX), (height/divY));
 		right[i] = new PIXI.Texture(spriteSheet, rectangle);
-		rectangle = new PIXI.Rectangle((i * (width / divX)), (2*height/divY), (width/divX), (height/divY));
+		rectangle = new PIXI.Rectangle(startX + (i * (width / divX)), startY + (2*height/divY), (width/divX), (height/divY));
 		down[i] = new PIXI.Texture(spriteSheet, rectangle);
-		rectangle = new PIXI.Rectangle((i * (width / divX)), (3*height/divY), (width/divX), (height/divY));
+		rectangle = new PIXI.Rectangle(startX + (i * (width / divX)), startY + (3*height/divY), (width/divX), (height/divY));
 		left[i] = new PIXI.Texture(spriteSheet, rectangle);
 	}
 	var character = new PIXI.Sprite(right[0]);
@@ -51,6 +51,8 @@ function setupMainChar() {
 	}
 	mainChar.anchor.set(0.5); // Center anchor
 	mainChar.scale.x = 1;		mainChar.scale.y = 1; // Set size
+	mainChar.boundsX = 15;
+	mainChar.boundsY = 25;
 	mainChar.x = appWidth / 2;	mainChar.y = appHeight / 2; // Center to screen
 	app.stage.addChild(mainChar); // Add to app panel
 	mainChar.walking = false; // Whether currently walking
@@ -70,11 +72,13 @@ setupMainChar(); // See above
 
 // Setup kitty kat :3
 //var cat = {};
-var cat = generateFromSpritesheet(96, 192, 3, 4, "content/characters/cat/spritesheet.png");
+var cat = generateFromSpritesheet(0, 0, 96, 192, 3, 4, "content/characters/cat/spritesheet.png");
 cat.tag = "cat";
 cat.anchor.set(0.5);
 cat.scale.x = 1.3;
 cat.scale.y = 1.3;
+cat.boundsX = 11;
+cat.boundsY = 20;
 cat.x = appWidth / 3;
 cat.y = appHeight / 4;
 app.stage.addChild(cat);
@@ -91,14 +95,33 @@ cat.handleWalk = function() {
 	}
 }
 
-// Healer character
-//var healer = {};
-//setupHealer; // See healer.js
-
+// Enemy
+var skeleton = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/skeleton/spritesheet2.png");
+skeleton.tag = "cat";
+skeleton.anchor.set(0.5);
+skeleton.scale.x = 1.3;
+skeleton.scale.y = 1.3;
+skeleton.boundsX = 20;
+skeleton.boundsY = 31;
+skeleton.x = appWidth / 1.5;
+skeleton.y = appHeight / 1.5;
+app.stage.addChild(skeleton);
+skeleton.walking = false;
+skeleton.direction = "right";
+skeleton.WalkFrame = 0;
+skeleton.handleWalk = function() {
+	if (!this.walking) {
+		var num = Math.floor(Math.random() * 4);
+		var direction = ["up","down","left","right"][num];
+		startWalk(this, direction);
+		this.walkStart += 180;
+		this.walkEnd += 180;
+	}
+}
 
 // Basic unit functions
-var collisionChars = [mainChar, cat];
-var walkables = [mainChar, cat];
+var collisionChars = [mainChar, cat, skeleton];
+var walkables = [mainChar, cat, skeleton];
 function startWalk(character, direction) {
 	if (!character.walking) {
 		character.walking = true;
@@ -126,6 +149,7 @@ app.ticker.add(function(delta) {
 		else {
 			// NPC idles
 			cat.handleWalk();
+			skeleton.handleWalk();
 			
 			// Bad exception for active frame and global frame desync
 			if (activeTimer < lastPress) {
