@@ -58,7 +58,32 @@ function setupMainChar() {
 	mainChar.walking = false; // Whether currently walking
 	mainChar.direction = "right"; // What direction facing
 	mainChar.walkFrame = 0; // Frame to stop walking on
+	mainChar.checkInteraction = function() {
+		// Define direction -> amount
+		var amount = {x: 0, y: 0};
+		if (this.facing == "right") { amount.x = 25; }
+		if (this.facing == "left") { amount.x = -25; }
+		if (this.facing == "up") { amount.y = 55; }
+		if (this.facing == "down") { amount.y = -55; }
+		// Setup blank sprite to be used as checker
+		var checker = new PIXI.Sprite();
+		checker.x = this.x + amount.x;
+		checker.y = this.y + amount.y;
+		checker.boundsX = 25;
+		checker.boundsY = 35;
+		app.stage.addChild(checker);
+		// See if the checker hits anything
+		var interact = "None";
+		for (var i = 0; i < interactables.length; i++) {
+			if (hitTestRectangle(interactables[i], checker)) {
+				interact = interactables[i].tag;
+			}
+		}
+		checker.destroy();
+		return interact;
+	}
 }
+
 // END OF GROSS ALL FUNCTIONS IN HERE BS
 
 // Setup keys (see keyboard.js and https://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000520.html)
@@ -97,7 +122,7 @@ cat.handleWalk = function() {
 
 // Enemy
 var skeleton = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/skeleton/spritesheet2.png");
-skeleton.tag = "cat";
+skeleton.tag = "skeleton";
 skeleton.anchor.set(0.5);
 skeleton.scale.x = 1.3;
 skeleton.scale.y = 1.3;
@@ -121,6 +146,7 @@ skeleton.handleWalk = function() {
 
 // Basic unit functions
 var collisionChars = [mainChar, cat, skeleton];
+var interactables = [cat, skeleton];
 var walkables = [mainChar, cat, skeleton];
 function startWalk(character, direction) {
 	if (!character.walking) {
@@ -185,7 +211,16 @@ app.ticker.add(function(delta) {
 				// Z key
 				if (zKey.clicked || z_key.isDown) {
 					lastPress = activeTimer;
-					// Whatever Z key should do
+					var interact = mainChar.checkInteraction();
+					if (interact != "None") {
+						//lastPress = globalTimer + 30; // Awkward handling of z being used both to interact and advance textbox
+						if (interact == "cat") {
+							textBox.create(["Meow!"])
+						}
+						if (interact == "skeleton") {
+							textBox.create(["~~spoopy~~"]);
+						}
+					}
 				}
 			}
 			// Handle walking
