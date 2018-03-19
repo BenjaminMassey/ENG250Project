@@ -5,7 +5,7 @@ var appHeight = 650;
 var app = new PIXI.Application(appWidth, appHeight, {backgroundColor : 0x1099bb});
 document.body.appendChild(app.view);
 var globalTimer = 0; // Updated by 1 every frame (runs at 60 fps)
-var activeTimer = 0; // Updated same as global - but only while active
+var activeTimer = 0; // Updated same as global - but only while active (not textbox)
 var running = true;
 var lastPress = 0; // Last frame a key was pressed
 
@@ -35,6 +35,22 @@ function generateFromSpritesheet(startX, startY, width, height, divX, divY, path
 	character.textures.right = right;
 	character.textures.left = left;
 	return character;
+}
+function generateFromTilesheet(startX, startY, width, height, divX, divY, pathname) {
+	var tiles = [];
+	var tileSheet = new PIXI.Texture.fromImage(pathname);
+	var rectangle;
+	var i = 0;
+	for (var x = 0; x < divX; x++) {
+		for (var y = 0; y < divY; y++) {
+			console.log("Starting (" + (startX + (x * (width / divX))) + ", " + (startY + (y * (height/divY))) + ") by " + (width/divX) + " and " + (height/divY))
+			rectangle = new PIXI.Rectangle(startX + (x * (width / divX)), startY + (y * (height/divY)), (width/divX), (height/divY));
+			tiles[i] = new PIXI.Texture(tileSheet, rectangle);
+			i++;
+		}
+		i++;
+	}
+	return tiles;
 }
 function setupMainChar() {	
 	mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
@@ -84,13 +100,32 @@ function setupMainChar() {
 		return interact;
 	}
 }
-
 // END OF GROSS ALL FUNCTIONS IN HERE BS
 
 // Setup keys (see keyboard.js and https://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000520.html)
 var left_key = keyboard(37);	var up_key = keyboard(38);
 var right_key = keyboard(39);	var down_key = keyboard(40);
 var x_key = keyboard(88);		var z_key = keyboard(90);
+
+// Setup tile sheets
+var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
+var darkBoringFloorTiles = [];
+var i = 0;
+for (var x = 0; x < 26; x++) {
+	for (var y = 0; y < 21; y++) {
+		darkBoringFloorTiles[i] = new PIXI.Sprite(baseTiles[179]);
+		darkBoringFloorTiles[i].tag = "tile";
+		darkBoringFloorTiles[i].anchor.set(0.5);
+		darkBoringFloorTiles[i].scale.x = 1.5;
+		darkBoringFloorTiles[i].scale.y = 1.5;
+		darkBoringFloorTiles[i].x = x * 32;
+		darkBoringFloorTiles[i].y = y * 32;
+		app.stage.addChild(darkBoringFloorTiles[i]);
+		i++;
+	}
+	i++;
+}
+
 
 // Setup main character
 var mainChar = {};
@@ -161,6 +196,7 @@ var debugText = new PIXI.Text("Debug");
 function displayDebugText(message) {
 	debugText.destroy();
 	debugText = new PIXI.Text(message);
+	debugText.style.fill = 0xFFFFFF;
 	debugText.anchor.set(0.5);
 	debugText.x = appWidth * 0.15;
 	debugText.y = appHeight * 0.1;
@@ -222,7 +258,7 @@ app.ticker.add(function(delta) {
 				// X key
 				if (xKey.clicked || x_key.isDown) {
 					lastPress = activeTimer;
-					textBox.create(["Oh hey there!", "This is a test of text boxes.", "Hopefully it worked!"]);
+					textBox.create(["-- PAUSED --"]);
 				}
 				// Z key
 				if (zKey.clicked || z_key.isDown) {
