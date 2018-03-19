@@ -43,7 +43,7 @@ function generateFromTilesheet(startX, startY, width, height, divX, divY, pathna
 	var i = 0;
 	for (var x = 0; x < divX; x++) {
 		for (var y = 0; y < divY; y++) {
-			console.log("Starting (" + (startX + (x * (width / divX))) + ", " + (startY + (y * (height/divY))) + ") by " + (width/divX) + " and " + (height/divY))
+			//console.log("Starting (" + (startX + (x * (width / divX))) + ", " + (startY + (y * (height/divY))) + ") by " + (width/divX) + " and " + (height/divY))
 			rectangle = new PIXI.Rectangle(startX + (x * (width / divX)), startY + (y * (height/divY)), (width/divX), (height/divY));
 			tiles[i] = new PIXI.Texture(tileSheet, rectangle);
 			i++;
@@ -55,6 +55,8 @@ function generateFromTilesheet(startX, startY, width, height, divX, divY, pathna
 function setupMainChar() {	
 	mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
 	mainChar.tag = "main";
+	mainChar.maxHP = 50;
+	mainChar.HP = mainChar.maxHP;
 	mainChar.textures = {};
 	mainChar.textures.up = [];
 	mainChar.textures.down = [];
@@ -110,6 +112,7 @@ var x_key = keyboard(88);		var z_key = keyboard(90);
 // Setup tile sheets
 var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
 var darkBoringFloorTiles = [];
+// Works out to be 26x21
 var i = 0;
 for (var x = 0; x < 26; x++) {
 	for (var y = 0; y < 21; y++) {
@@ -132,7 +135,6 @@ var mainChar = {};
 setupMainChar(); // See above
 
 // Setup kitty kat :3
-//var cat = {};
 var cat = generateFromSpritesheet(0, 0, 96, 192, 3, 4, "content/characters/cat/spritesheet.png");
 cat.tag = "cat";
 cat.anchor.set(0.5);
@@ -147,6 +149,30 @@ cat.walking = false;
 cat.direction = "right";
 cat.WalkFrame = 0;
 cat.handleWalk = function() {
+	if (!this.walking) {
+		var num = Math.floor(Math.random() * 4);
+		var direction = ["up","down","left","right"][num];
+		startWalk(this, direction);
+		this.walkStart += 60;
+		this.walkEnd += 60;
+	}
+}
+
+// Setup healer character
+var healer = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/healer/spritesheet.png");
+healer.tag = "healer";
+healer.anchor.set(0.5);
+healer.scale.x = 1.3;
+healer.scale.y = 1.3;
+healer.boundsX = 11;
+healer.boundsY = 29;
+healer.x = appWidth / 1.4;
+healer.y = appHeight / 4;
+app.stage.addChild(healer);
+healer.walking = false;
+healer.direction = "down";
+healer.WalkFrame = 0;
+healer.handleWalk = function() {
 	if (!this.walking) {
 		var num = Math.floor(Math.random() * 4);
 		var direction = ["up","down","left","right"][num];
@@ -181,9 +207,9 @@ skeleton.handleWalk = function() {
 }
 
 // Basic unit functions
-var collisionChars = [mainChar, cat, skeleton];
-var interactables = [cat, skeleton];
-var walkables = [mainChar, cat, skeleton];
+var collisionChars = [mainChar, cat, skeleton, healer];
+var interactables = [cat, skeleton, healer];
+var walkables = [mainChar, cat, skeleton, healer];
 function startWalk(character, direction) {
 	if (!character.walking) {
 		character.walking = true;
@@ -210,7 +236,8 @@ app.ticker.add(function(delta) {
 		if (debug) {
 			displayDebugText("Global Timer: " + globalTimer + "\n" +
 							 "Active Timer: " + activeTimer + "\n" +
-							 "Last Press: " + lastPress);
+							 "Last Press: " + lastPress + "\n" +
+							 "HP: " + mainChar.HP);
 		}
 		
 		if((globalTimer % 60) == 0) { // Every second
@@ -228,6 +255,7 @@ app.ticker.add(function(delta) {
 			// NPC idles
 			cat.handleWalk();
 			skeleton.handleWalk();
+			healer.handleWalk();
 			
 			// For switching from textbox interaction (where globalTimer was used)
 			if (activeTimer < lastPress) {
@@ -263,6 +291,7 @@ app.ticker.add(function(delta) {
 				// Z key
 				if (zKey.clicked || z_key.isDown) {
 					lastPress = activeTimer;
+					// Handle interactions with other objects
 					var interact = mainChar.checkInteraction();
 					if (interact != "None") {
 						lastPress = globalTimer; // Going into textbox interaction, which uses globalTimer
@@ -270,7 +299,17 @@ app.ticker.add(function(delta) {
 							textBox.create(["Meow!"])
 						}
 						if (interact == "skeleton") {
-							textBox.create(["~~spoopy~~"]);
+							textBox.create(["~~you've been spooped~~"]);
+							mainChar.HP -= 10;
+						}
+						if (interact == "healer") {
+							if (mainChar.HP < mainChar.maxHP) {
+								textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around."]);
+								mainChar.HP = mainChar.maxHP;
+							}
+							else {
+								textBox.create(["Oh hey there daughter!", "Glad to see you're doing well", "Stay safe!"]);
+							}
 						}
 					}
 				}
