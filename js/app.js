@@ -11,6 +11,7 @@ var running = true;
 var lastPress = 0; // Last frame a key was pressed
 var firstTime = true; // For spawning main char
 var health = 50; // Need to store globaly because bad code
+var killCount = 0;
 
 function generateFromSpritesheet(startX, startY, width, height, divX, divY, pathname) {
 	var up = [];
@@ -127,6 +128,7 @@ function setupMainChar(spawnX, spawnY, maxHP, currentHP) {
 		mainChar.target.tag = "dead";
 		mainChar.target.destroy();
 		mainChar.kill = false;
+		killCount++;
 	};
 	mainChar.zap = function() {
 		var damageTaken = mainChar.target.attack();
@@ -195,6 +197,7 @@ var turnBased = {
 		this.textObject.anchor.set(0.5);
 		this.textObject.style.fill = 0xFFFFFF;
 		this.textObject.style.align = "center";
+		this.textObject.style.strokeThickness = 3;
 		this.textObject.x = appWidth / 2;
 		this.textObject.y = appHeight * 0.8;
 		app.stage.addChild(this.textObject);
@@ -347,9 +350,10 @@ function displayDebugText(message) {
 	debugText.destroy();
 	debugText = new PIXI.Text(message);
 	debugText.style.fill = 0xFFFFFF;
+	debugText.style.strokeThickness = 3;
 	debugText.anchor.set(0.5);
 	debugText.x = appWidth * 0.15;
-	debugText.y = appHeight * 0.1;
+	debugText.y = appHeight * 0.15;
 	app.stage.addChild(debugText);
 }
 
@@ -630,18 +634,50 @@ if (houseType == "bad") {
 else {
 	makeGoodHouse();
 }
-//clearScreen();
-//makeOutside();
 
 // Main loop
 app.ticker.add(function(delta) {
 	if (running) {
 		
-		if (debug) {/*
+		if (loc == "outside") {
+			displayDebugText("Kill Count: " + killCount + " / 5");
+		}
+		
+		if (debug) {
 			displayDebugText("Global Timer: " + globalTimer + "\n" +
 							 "Active Timer: " + activeTimer + "\n" +
+							 "House Timer: " + houseTimer + "\n" +
 							 "Last Press: " + lastPress + "\n" +
-							 "HP: " + mainChar.HP);*/
+							 "Kill count: " + killCount);
+		}
+		
+		if (killCount == 5) {
+			clearScreen();
+			var yay = new PIXI.Text("You won!\n\nClick any of this text to be \ntaken to the paper about this\ngame. I hope it was bearable!");
+			yay.style.fill = 0xFFFFFF;
+			yay.style.strokeThickness = 3;
+			yay.style.align = "center";
+			yay.anchor.set(0.5);
+			yay.x = (appWidth / 2);
+			yay.y = (appHeight / 2);
+			app.stage.addChild(yay);
+			yay.interactive = true;
+			yay.click = function() {
+				window.open("http://eng250paper.benjaminmassey.com/");
+			};
+			running = false;
+		}
+		
+		if (mainChar.HP <= 0) {
+			clearScreen();
+			var rip = new PIXI.Text("You died. Refresh to try again.");
+			rip.style.fill = 0xFFFFFF;
+			rip.style.strokeThickness = 3;
+			rip.anchor.set(0.5);
+			rip.x = appWidth / 2;
+			rip.y = appHeight / 2;
+			app.stage.addChild(rip);
+			running = false;
 		}
 		
 		if((globalTimer % 60) == 0) { // Every second
@@ -864,5 +900,8 @@ app.ticker.add(function(delta) {
 		
 		// Simple global timer of frame count
 		globalTimer++;
+		if (loc == "inside") {
+			houseTimer++;
+		}
 	}
 });

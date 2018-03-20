@@ -12,6 +12,7 @@ var textBox = {
 		this.textObject = new PIXI.Text(this.entries[this.currentPlace]);
 		this.textObject.anchor.set(0.5);
 		this.textObject.style.fill = 0xFFFFFF;
+		this.textObject.style.strokeThickness = 3;
 		this.textObject.x = appWidth / 2;
 		this.textObject.y = appHeight * 0.79;
 		app.stage.addChild(this.textObject);
