@@ -52,10 +52,10 @@ function generateFromTilesheet(startX, startY, width, height, divX, divY, pathna
 	}
 	return tiles;
 }
-function setupMainChar() {	
+function setupMainChar(spawnX, spawnY, startHP) {	
 	mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
 	mainChar.tag = "main";
-	mainChar.maxHP = 50;
+	mainChar.maxHP = startHP;
 	mainChar.HP = mainChar.maxHP;
 	mainChar.textures = {};
 	mainChar.textures.up = [];
@@ -72,7 +72,8 @@ function setupMainChar() {
 	mainChar.scale.x = 1;		mainChar.scale.y = 1; // Set size
 	mainChar.boundsX = 15;
 	mainChar.boundsY = 25;
-	mainChar.x = appWidth / 2;	mainChar.y = appHeight / 2; // Center to screen
+	mainChar.x = spawnX;
+	mainChar.y = spawnY;
 	app.stage.addChild(mainChar); // Add to app panel
 	mainChar.walking = false; // Whether currently walking
 	mainChar.direction = "right"; // What direction facing
@@ -86,20 +87,60 @@ function setupMainChar() {
 		if (this.facing == "down") { amount.y = -55; }
 		// Setup blank sprite to be used as checker
 		var checker = new PIXI.Sprite();
+		checker.tag = "checker";
 		checker.x = this.x + amount.x;
 		checker.y = this.y + amount.y;
 		checker.boundsX = 25;
 		checker.boundsY = 35;
 		app.stage.addChild(checker);
 		// See if the checker hits anything
-		var interact = "None";
+		var interact = {tag: "None"};
 		for (var i = 0; i < interactables.length; i++) {
 			if (hitTestRectangle(interactables[i], checker)) {
-				interact = interactables[i].tag;
+				interact = interactables[i];
 			}
 		}
 		checker.destroy();
 		return interact;
+	}
+	mainChar.kill = false;
+	mainChar.murder = function() {
+		var indexI = interactables.indexOf(mainChar.target);
+		interactables.splice(indexI, 1);
+		var indexW = interactables.indexOf(mainChar.target);
+		walkables.splice(indexW, 1);
+		var indexC = collisionChars.indexOf(mainChar.target);
+		collisionChars.splice(indexC, 1);
+		mainChar.target.tag = "dead";
+		mainChar.target.destroy();
+		mainChar.kill = false;
+	};
+	mainChar.zap = function() {
+		var rng = Math.floor(Math.random() * 10);
+		if (rng > 2) {
+			mainChar.target.HP -= (8 + Math.floor(Math.random() * 5));
+			if (mainChar.target.HP > 0) {
+				textBox.create(["You hit!"], function(){mainChar.fight();});
+			}
+			else {
+				textBox.create(["You won!"], function(){mainChar.kill = true;});
+			}
+		}
+		else {
+			textBox.create(["You missed your zap!"], function(){mainChar.fight();});
+		}
+	}
+	mainChar.punch = function() {
+		mainChar.target.HP -= (5 + Math.floor(Math.random() * 3));
+		if (mainChar.target.HP > 0) {
+			textBox.create(["You hit!"], function(){mainChar.fight();});
+		}
+		else {
+			textBox.create(["You won!"], function(){mainChar.kill == true;});
+		}
+	}
+	mainChar.fight = function() {
+		turnBased.create(["ZAP", "Punch"], [function(){mainChar.zap();}, function(){mainChar.punch();}]);
 	}
 }
 
@@ -203,79 +244,92 @@ for (var x = 0; x < 26; x++) {
 
 // Setup main character
 var mainChar = {};
-setupMainChar(); // See above
+setupMainChar(appWidth / 2, appHeight / 2, 50); // See above
 
 // Setup kitty kat :3
-var cat = generateFromSpritesheet(0, 0, 96, 192, 3, 4, "content/characters/cat/spritesheet.png");
-cat.tag = "cat";
-cat.anchor.set(0.5);
-cat.scale.x = 1.3;
-cat.scale.y = 1.3;
-cat.boundsX = 11;
-cat.boundsY = 20;
-cat.x = appWidth / 3;
-cat.y = appHeight / 4;
-app.stage.addChild(cat);
-cat.walking = false;
-cat.direction = "right";
-cat.WalkFrame = 0;
-cat.handleWalk = function() {
-	if (!this.walking) {
-		var num = Math.floor(Math.random() * 4);
-		var direction = ["up","down","left","right"][num];
-		startWalk(this, direction);
-		this.walkStart += 60;
-		this.walkEnd += 60;
+function getCat(spawnX, spawnY) {
+	var cat = generateFromSpritesheet(0, 0, 96, 192, 3, 4, "content/characters/cat/spritesheet.png");
+	cat.tag = "cat";
+	cat.anchor.set(0.5);
+	cat.scale.x = 1.3;
+	cat.scale.y = 1.3;
+	cat.boundsX = 11;
+	cat.boundsY = 20;
+	cat.x = spawnX;
+	cat.y = spawnY;
+	app.stage.addChild(cat);
+	cat.walking = false;
+	cat.direction = "right";
+	cat.WalkFrame = 0;
+	cat.handleWalk = function() {
+		if (!this.walking) {
+			var num = Math.floor(Math.random() * 4);
+			var direction = ["up","down","left","right"][num];
+			startWalk(this, direction);
+			this.walkStart += 60;
+			this.walkEnd += 60;
+		}
 	}
+	return cat;
 }
+var cat = getCat(appWidth / 3, appHeight / 4);
 
 // Setup healer character
-var healer = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/healer/spritesheet.png");
-healer.tag = "healer";
-healer.anchor.set(0.5);
-healer.scale.x = 1.3;
-healer.scale.y = 1.3;
-healer.boundsX = 11;
-healer.boundsY = 29;
-healer.x = appWidth / 1.4;
-healer.y = appHeight / 4;
-app.stage.addChild(healer);
-healer.walking = false;
-healer.direction = "down";
-healer.WalkFrame = 0;
-healer.handleWalk = function() {
-	if (!this.walking) {
-		var num = Math.floor(Math.random() * 4);
-		var direction = ["up","down","left","right"][num];
-		startWalk(this, direction);
-		this.walkStart += 60;
-		this.walkEnd += 60;
+function getHealer(spawnX, spawnY) {
+	var healer = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/healer/spritesheet.png");
+	healer.tag = "healer";
+	healer.anchor.set(0.5);
+	healer.scale.x = 1.3;
+	healer.scale.y = 1.3;
+	healer.boundsX = 11;
+	healer.boundsY = 29;
+	healer.x = spawnX;
+	healer.y = spawnY;
+	app.stage.addChild(healer);
+	healer.walking = false;
+	healer.direction = "down";
+	healer.WalkFrame = 0;
+	healer.handleWalk = function() {
+		if (!this.walking) {
+			var num = Math.floor(Math.random() * 4);
+			var direction = ["up","down","left","right"][num];
+			startWalk(this, direction);
+			this.walkStart += 60;
+			this.walkEnd += 60;
+		}
 	}
+	return healer;
 }
+var healer = getHealer(appWidth / 1.4, appHeight / 4);
 
 // Enemy
-var skeleton = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/skeleton/spritesheet2.png");
-skeleton.tag = "skeleton";
-skeleton.anchor.set(0.5);
-skeleton.scale.x = 1.3;
-skeleton.scale.y = 1.3;
-skeleton.boundsX = 20;
-skeleton.boundsY = 31;
-skeleton.x = appWidth / 1.5;
-skeleton.y = appHeight / 1.5;
-app.stage.addChild(skeleton);
-skeleton.walking = false;
-skeleton.direction = "right";
-skeleton.WalkFrame = 0;
-skeleton.handleWalk = function() {
-	if (!this.walking) {
-		var num = Math.floor(Math.random() * 4);
-		var direction = ["up","down","left","right"][num];
-		startWalk(this, direction);
-		this.walkStart += 180;
-		this.walkEnd += 180;
+function getSkeleton(spawnX, spawnY, startHP) {
+	var skeleton = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/skeleton/spritesheet2.png");
+	skeleton.tag = "skeleton";
+	skeleton.anchor.set(0.5);
+	skeleton.scale.x = 1.3;
+	skeleton.scale.y = 1.3;
+	skeleton.boundsX = 20;
+	skeleton.boundsY = 31;
+	skeleton.x = spawnX;
+	skeleton.y = spawnY;
+	skeleton.HP = startHP;
+	app.stage.addChild(skeleton);
+	skeleton.walking = false;
+	skeleton.direction = "right";
+	skeleton.WalkFrame = 0;
+	skeleton.handleWalk = function() {
+		if (!this.walking) {
+			var num = Math.floor(Math.random() * 4);
+			var direction = ["up","down","left","right"][num];
+			startWalk(this, direction);
+			this.walkStart += 180;
+			this.walkEnd += 180;
+		}
 	}
+	return skeleton;
 }
+var skeleton = getSkeleton(mainChar.x + 50, mainChar.y, 25);
 
 // Basic unit functions
 var collisionChars = [mainChar, cat, skeleton, healer];
@@ -324,20 +378,25 @@ app.ticker.add(function(delta) {
 		}
 		else if (turnBased.active) {
 			if ((upKey.clicked || up_key.isDown) && globalTimer > lastPress + 15) {
+				lastPress = globalTimer;
 				turnBased.devance();
 			}
 			if ((downKey.clicked || down_key.isDown) && globalTimer > lastPress + 15) {
+				lastPress = globalTimer;
 				turnBased.advance();
 			}
 			if ((zKey.clicked || z_key.isDown) && globalTimer > lastPress + 15) {
+				lastPress = globalTimer;
 				turnBased.perform();
 			}
 		}
 		else {
 			// NPC idles
-			cat.handleWalk();
-			skeleton.handleWalk();
-			healer.handleWalk();
+			for (var i = 0; i < walkables.length; i++) {
+				if (walkables[i].tag != "main") {
+					walkables[i].handleWalk();
+				}
+			}
 			
 			// For switching from textbox interaction (where globalTimer was used)
 			if (activeTimer < lastPress) {
@@ -375,18 +434,18 @@ app.ticker.add(function(delta) {
 					lastPress = activeTimer;
 					// Handle interactions with other objects
 					var interact = mainChar.checkInteraction();
-					if (interact != "None") {
+					if (interact.tag != "None") {
 						lastPress = globalTimer; // Going into textbox interaction, which uses globalTimer
-						if (interact == "cat") {
+						if (interact.tag == "cat") {
 							textBox.create(["Meow!"], function(){})
 						}
-						if (interact == "skeleton") {
-							turnBased.create(["Lose 10 HP", "Lose 20 HP"], [function(){mainChar.HP-=10;}, function(){mainChar.HP-=20;}]);
+						if (interact.tag == "skeleton") {
+							mainChar.target = interact;
+							mainChar.fight();
 						}
-						if (interact == "healer") {
+						if (interact.tag == "healer") {
 							if (mainChar.HP < mainChar.maxHP) {
 								textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around."], function(){mainChar.HP=mainChar.maxHP;});
-								//mainChar.HP = mainChar.maxHP;
 							}
 							else {
 								textBox.create(["Oh hey there daughter!", "Glad to see you're doing well", "Stay safe!"], function(){});
@@ -397,66 +456,68 @@ app.ticker.add(function(delta) {
 			}
 			// Handle walking
 			for (var i = 0; i < walkables.length; i++) {
-				if (walkables[i].walking){
-					if (activeTimer < walkables[i].walkEnd){
-						var separations = walkables[i].textures.up.length; // Number of frames in walk animation
-						var amount = Math.round((walkables[i].walkEnd - walkables[i].walkStart) / separations);
-						// for+if makes it go through once for every animation frame j
-						for (var j = 0; j < separations; j++) {
-							if (activeTimer == (walkables[i].walkStart) + (j*amount)) {
-								var start = {x: walkables[i].x, y: walkables[i].y};
-								if (walkables[i].direction == "left") { 
-									walkables[i].x -= 30 / separations;
-									walkables[i].texture = walkables[i].textures.left[j];
-								}
-								if (walkables[i].direction == "up")   { 
-									walkables[i].y -= 30 / separations;
-									walkables[i].texture = walkables[i].textures.up[j];
-								}
-								if (walkables[i].direction == "right"){ 
-									walkables[i].x += 30 / separations;
-									walkables[i].texture = walkables[i].textures.right[j];
-								}
-								if (walkables[i].direction == "down") { 
-									walkables[i].y += 30 / separations;
-									walkables[i].texture = walkables[i].textures.down[j];
-								}
-								// Handle other character collision
-								for (var k = 0; k < collisionChars.length; k++) {
-									if (walkables[i] != collisionChars[k]) {
-										// See hitdetection.js
-										var collided = hitTestRectangle(walkables[i], collisionChars[k]);
-										if (collided){
-											walkables[i].x = start.x;
-											walkables[i].y = start.y;
+				if (walkables[i] != null && walkables[i].tag != "dead") {
+					if (walkables[i].walking){
+						if (activeTimer < walkables[i].walkEnd){
+							var separations = walkables[i].textures.up.length; // Number of frames in walk animation
+							var amount = Math.round((walkables[i].walkEnd - walkables[i].walkStart) / separations);
+							// for+if makes it go through once for every animation frame j
+							for (var j = 0; j < separations; j++) {
+								if (activeTimer == (walkables[i].walkStart) + (j*amount)) {
+									var start = {x: walkables[i].x, y: walkables[i].y};
+									if (walkables[i].direction == "left") { 
+										walkables[i].x -= 30 / separations;
+										walkables[i].texture = walkables[i].textures.left[j];
+									}
+									if (walkables[i].direction == "up")   { 
+										walkables[i].y -= 30 / separations;
+										walkables[i].texture = walkables[i].textures.up[j];
+									}
+									if (walkables[i].direction == "right"){ 
+										walkables[i].x += 30 / separations;
+										walkables[i].texture = walkables[i].textures.right[j];
+									}
+									if (walkables[i].direction == "down") { 
+										walkables[i].y += 30 / separations;
+										walkables[i].texture = walkables[i].textures.down[j];
+									}
+									// Handle other character collision
+									for (var k = 0; k < collisionChars.length; k++) {
+										if (walkables[i] != collisionChars[k]) {
+											// See hitdetection.js
+											var collided = hitTestRectangle(walkables[i], collisionChars[k]);
+											if (collided){
+												walkables[i].x = start.x;
+												walkables[i].y = start.y;
+											}
 										}
 									}
-								}
-								
-								// Handle screen bounds
-								var buffer = {
-									l: walkables[i].texture.width / 3.5,
-									r: walkables[i].texture.width / 3.5,
-									t: walkables[i].texture.height / 3.5,
-									b: walkables[i].texture.height / 2
-								};
-								if (walkables[i].x > appWidth - buffer.r) {
-									walkables[i].x = appWidth - buffer.r;
-								} 
-								if (walkables[i].x < buffer.l) {
-									walkables[i].x = buffer.l;
-								}
-								if (walkables[i].y > appHeight - buffer.b) {
-									walkables[i].y = appHeight - buffer.b;
-								}
-								if (walkables[i].y < buffer.t) {
-									walkables[i].y = buffer.t;
+									
+									// Handle screen bounds
+									var buffer = {
+										l: walkables[i].texture.width / 3.5,
+										r: walkables[i].texture.width / 3.5,
+										t: walkables[i].texture.height / 3.5,
+										b: walkables[i].texture.height / 2
+									};
+									if (walkables[i].x > appWidth - buffer.r) {
+										walkables[i].x = appWidth - buffer.r;
+									} 
+									if (walkables[i].x < buffer.l) {
+										walkables[i].x = buffer.l;
+									}
+									if (walkables[i].y > appHeight - buffer.b) {
+										walkables[i].y = appHeight - buffer.b;
+									}
+									if (walkables[i].y < buffer.t) {
+										walkables[i].y = buffer.t;
+									}
 								}
 							}
+							
 						}
-						
+						else { walkables[i].walking = false; }
 					}
-					else { walkables[i].walking = false; }
 				}
 			}
 			// Simple timer for active frames
@@ -469,7 +530,11 @@ app.ticker.add(function(delta) {
 		for (var i = 0; i < keys.length; i++) {
 			keys[i].clicked = false;
 		}
-			
+		
+		if (mainChar.kill) {
+			mainChar.murder();
+		}
+		
 		// Simple global timer of frame count
 		globalTimer++;
 	}

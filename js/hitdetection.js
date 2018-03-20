@@ -2,6 +2,8 @@
 
 function hitTestRectangle(r1, r2) {
 
+  //console.log("Looking at " + r1.tag + " and " + r2.tag);
+
   //Define the variables we'll need to calculate
   let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
 
