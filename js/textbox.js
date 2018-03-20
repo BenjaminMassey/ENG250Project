@@ -1,8 +1,10 @@
+
 var textBox = {
 	
 	active: false,
 	entries: [],
 	currentPlace: 0,
+	postFunction: function(){},
 	textObject: {destroy: function(){}},
 	
 	display: function() {
@@ -14,8 +16,9 @@ var textBox = {
 		app.stage.addChild(this.textObject);
 	},
 	
-	create: function(newEntries){
+	create: function(newEntries, newFunction){
 		this.active = true;
+		this.postFunction = newFunction;
 		this.entries = newEntries;
 		this.currentPlace = 0;
 		this.display();
@@ -24,7 +27,9 @@ var textBox = {
 	advance: function() {
 		this.currentPlace++;
 		if (this.currentPlace > this.entries.length - 1) {
+			console.log("please");
 			this.end();
+			console.log("work");
 		}
 		else {
 			this.display();
@@ -32,6 +37,9 @@ var textBox = {
 	},
 	
 	end: function() {
+		console.log("yay");
+		this.postFunction();
+		console.log("pls");
 		this.active = false;
 		this.textObject.destroy();
 		this.textObject = {destroy: function(){}};

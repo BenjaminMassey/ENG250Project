@@ -368,7 +368,7 @@ app.ticker.add(function(delta) {
 				// X key
 				if (xKey.clicked || x_key.isDown) {
 					lastPress = activeTimer;
-					textBox.create(["-- PAUSED --"]);
+					textBox.create(["-- PAUSED --"], function(){});
 				}
 				// Z key
 				if (zKey.clicked || z_key.isDown) {
@@ -378,18 +378,18 @@ app.ticker.add(function(delta) {
 					if (interact != "None") {
 						lastPress = globalTimer; // Going into textbox interaction, which uses globalTimer
 						if (interact == "cat") {
-							textBox.create(["Meow!"])
+							textBox.create(["Meow!"], function(){})
 						}
 						if (interact == "skeleton") {
 							turnBased.create(["Lose 10 HP", "Lose 20 HP"], [function(){mainChar.HP-=10;}, function(){mainChar.HP-=20;}]);
 						}
 						if (interact == "healer") {
 							if (mainChar.HP < mainChar.maxHP) {
-								textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around."]);
-								mainChar.HP = mainChar.maxHP;
+								textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around."], function(){mainChar.HP=mainChar.maxHP;});
+								//mainChar.HP = mainChar.maxHP;
 							}
 							else {
-								textBox.create(["Oh hey there daughter!", "Glad to see you're doing well", "Stay safe!"]);
+								textBox.create(["Oh hey there daughter!", "Glad to see you're doing well", "Stay safe!"], function(){});
 							}
 						}
 					}
