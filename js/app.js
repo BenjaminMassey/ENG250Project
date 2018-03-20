@@ -1,5 +1,5 @@
 // Setup app
-var debug = true;
+var debug = false;
 var appWidth = 800;
 var appHeight = 650;
 var app = new PIXI.Application(appWidth, appHeight, {backgroundColor : 0x1099bb});
@@ -649,7 +649,6 @@ if (Math.random() > 0.5) {
 else {
 	houseType = "good";
 }
-houseType = "good"; // debug
 if (houseType == "bad") {
 	makeBadHouse();
 }
