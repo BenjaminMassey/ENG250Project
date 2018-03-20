@@ -28,6 +28,7 @@ var turnBased = {
 		}
 		this.textObject = new PIXI.Text(txt);
 		this.textObject.anchor.set(0.5);
+		this.textObject.style.fill = 0xFFFFFF;
 		this.textObject.x = appWidth / 2;
 		this.textObject.y = appHeight * 0.8;
 		app.stage.addChild(this.textObject);

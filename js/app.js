@@ -71,7 +71,7 @@ function setupMainChar(spawnX, spawnY, startHP) {
 	mainChar.anchor.set(0.5); // Center anchor
 	mainChar.scale.x = 1;		mainChar.scale.y = 1; // Set size
 	mainChar.boundsX = 15;
-	mainChar.boundsY = 25;
+	mainChar.boundsY = 28;
 	mainChar.x = spawnX;
 	mainChar.y = spawnY;
 	app.stage.addChild(mainChar); // Add to app panel
@@ -107,8 +107,8 @@ function setupMainChar(spawnX, spawnY, startHP) {
 	mainChar.murder = function() {
 		var indexI = interactables.indexOf(mainChar.target);
 		interactables.splice(indexI, 1);
-		var indexW = interactables.indexOf(mainChar.target);
-		walkables.splice(indexW, 1);
+		//var indexW = interactables.indexOf(mainChar.target);
+		//walkables.splice(indexW, 1);
 		var indexC = collisionChars.indexOf(mainChar.target);
 		collisionChars.splice(indexC, 1);
 		mainChar.target.tag = "dead";
@@ -116,27 +116,33 @@ function setupMainChar(spawnX, spawnY, startHP) {
 		mainChar.kill = false;
 	};
 	mainChar.zap = function() {
+		var damageTaken = mainChar.target.attack();
 		var rng = Math.floor(Math.random() * 10);
 		if (rng > 2) {
-			mainChar.target.HP -= (8 + Math.floor(Math.random() * 5));
+			var damage = 8 + Math.floor(Math.random() * 5);
+			mainChar.target.HP -= damage;
 			if (mainChar.target.HP > 0) {
-				textBox.create(["You hit!"], function(){mainChar.fight();});
+				textBox.create(["You hit for " + damage + " HP!", "Enemy now has " + mainChar.target.HP + " health left.", "The enemy hit you back for " + damageTaken + " damage!", "You now have " + mainChar.HP + " HP left."], function(){mainChar.fight();});
 			}
 			else {
+				mainChar.HP += damageTaken;
 				textBox.create(["You won!"], function(){mainChar.kill = true;});
 			}
 		}
 		else {
-			textBox.create(["You missed your zap!"], function(){mainChar.fight();});
+			textBox.create(["You missed your zap!", "The enemy hit you back for " + damageTaken + " damage!", "You now have " + mainChar.HP + " HP left."], function(){mainChar.fight();});
 		}
 	}
 	mainChar.punch = function() {
-		mainChar.target.HP -= (5 + Math.floor(Math.random() * 3));
+		var damageTaken = mainChar.target.attack();
+		var damage = 5 + Math.floor(Math.random() * 3);
+		mainChar.target.HP -= damage;
 		if (mainChar.target.HP > 0) {
-			textBox.create(["You hit!"], function(){mainChar.fight();});
+			textBox.create(["You hit for " + damage + " HP!", "Enemy now has " + mainChar.target.HP + " health left.", "The enemy hit you back for " + damageTaken + " damage!", "You now have " + mainChar.HP + " HP left."], function(){mainChar.fight();});
 		}
 		else {
-			textBox.create(["You won!"], function(){mainChar.kill == true;});
+			mainChar.HP += damageTaken;
+			textBox.create(["You won!"], function(){mainChar.kill = true;});
 		}
 	}
 	mainChar.fight = function() {
@@ -174,6 +180,7 @@ var turnBased = {
 		}
 		this.textObject = new PIXI.Text(txt);
 		this.textObject.anchor.set(0.5);
+		this.textObject.style.fill = 0xFFFFFF;
 		this.textObject.x = appWidth / 2;
 		this.textObject.y = appHeight * 0.8;
 		app.stage.addChild(this.textObject);
@@ -303,17 +310,18 @@ function getHealer(spawnX, spawnY) {
 var healer = getHealer(appWidth / 1.4, appHeight / 4);
 
 // Enemy
-function getSkeleton(spawnX, spawnY, startHP) {
+function getSkeleton(spawnX, spawnY, startHP, baseDMG) {
 	var skeleton = generateFromSpritesheet(0, 0, 576, 256, 9, 4, "content/characters/skeleton/spritesheet2.png");
 	skeleton.tag = "skeleton";
 	skeleton.anchor.set(0.5);
 	skeleton.scale.x = 1.3;
 	skeleton.scale.y = 1.3;
 	skeleton.boundsX = 20;
-	skeleton.boundsY = 31;
+	skeleton.boundsY = 30;
 	skeleton.x = spawnX;
 	skeleton.y = spawnY;
 	skeleton.HP = startHP;
+	skeleton.baseDMG = baseDMG;
 	app.stage.addChild(skeleton);
 	skeleton.walking = false;
 	skeleton.direction = "right";
@@ -327,9 +335,15 @@ function getSkeleton(spawnX, spawnY, startHP) {
 			this.walkEnd += 180;
 		}
 	}
+	skeleton.attack = function() {
+		console.log("skeleattack");
+		var damage = this.baseDMG + Math.floor(Math.random() * 3);
+		mainChar.HP -= damage;
+		return damage;
+	}
 	return skeleton;
 }
-var skeleton = getSkeleton(mainChar.x + 50, mainChar.y, 25);
+var skeleton = getSkeleton(mainChar.x + 50, mainChar.y, 25, 5);
 
 // Basic unit functions
 var collisionChars = [mainChar, cat, skeleton, healer];
@@ -366,7 +380,16 @@ app.ticker.add(function(delta) {
 		}
 		
 		if((globalTimer % 60) == 0) { // Every second
-			// DEBUG WHATEVER
+			var walkers = "Walkers: ";
+			for (var i = 0; i < walkables.length; i++) {
+				if (i < walkables.length - 1) {
+					walkers += walkables[i].tag + ", ";
+				}
+				else {
+					walkers += walkables[i].tag;
+				}
+			}
+			console.log(walkers);
 		}
 
 		if (textBox.active) {
@@ -441,14 +464,14 @@ app.ticker.add(function(delta) {
 						}
 						if (interact.tag == "skeleton") {
 							mainChar.target = interact;
-							mainChar.fight();
+							textBox.create(["You found a skeleton! He has " + interact.HP + " health."], function(){mainChar.fight();});
 						}
 						if (interact.tag == "healer") {
 							if (mainChar.HP < mainChar.maxHP) {
-								textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around."], function(){mainChar.HP=mainChar.maxHP;});
+								textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around.", "(You are now back to " + mainChar.maxHP + " health.)"], function(){mainChar.HP=mainChar.maxHP;});
 							}
 							else {
-								textBox.create(["Oh hey there daughter!", "Glad to see you're doing well", "Stay safe!"], function(){});
+								textBox.create(["Oh hey there daughter!", "Glad to see you're doing well.", "Stay safe!"], function(){});
 							}
 						}
 					}
