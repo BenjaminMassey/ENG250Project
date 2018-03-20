@@ -228,6 +228,8 @@ var left_key = keyboard(37);	var up_key = keyboard(38);
 var right_key = keyboard(39);	var down_key = keyboard(40);
 var x_key = keyboard(88);		var z_key = keyboard(90);
 
+/* CREATE THE BASIC BORING BACKGROUND
+
 // Setup tile sheets
 var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
 var darkBoringFloorTiles = [];
@@ -248,10 +250,15 @@ for (var x = 0; x < 26; x++) {
 	i++;
 }
 
+*/
+
+/* SET UP MAIN CHAR AND SPAWN HER IN CENTER
 
 // Setup main character
 var mainChar = {};
 setupMainChar(appWidth / 2, appHeight / 2, 50); // See above
+
+*/
 
 // Setup kitty kat :3
 function getCat(spawnX, spawnY) {
@@ -279,7 +286,12 @@ function getCat(spawnX, spawnY) {
 	}
 	return cat;
 }
+
+/* CREATE CAT AND PUT IN TOP LEFT ISH
+
 var cat = getCat(appWidth / 3, appHeight / 4);
+
+*/
 
 // Setup healer character
 function getHealer(spawnX, spawnY) {
@@ -307,7 +319,11 @@ function getHealer(spawnX, spawnY) {
 	}
 	return healer;
 }
+/* CREATE HEALER AND PUT HIM IN TOP RIGHT ISH
+
 var healer = getHealer(appWidth / 1.4, appHeight / 4);
+
+*/
 
 // Enemy
 function getSkeleton(spawnX, spawnY, startHP, baseDMG) {
@@ -343,12 +359,22 @@ function getSkeleton(spawnX, spawnY, startHP, baseDMG) {
 	}
 	return skeleton;
 }
+
+/* CREATE SKELEBOY AND PUT HIM TO RIGHT OF PLAYER
+
 var skeleton = getSkeleton(mainChar.x + 50, mainChar.y, 25, 5);
 
+*/
+
+/* DEFINE THE BASIC LISTS FOR SORTING
+
 // Basic unit functions
+
 var collisionChars = [mainChar, cat, skeleton, healer];
 var interactables = [cat, skeleton, healer];
 var walkables = [mainChar, cat, skeleton, healer];
+
+*/
 function startWalk(character, direction) {
 	if (!character.walking) {
 		character.walking = true;
@@ -357,6 +383,7 @@ function startWalk(character, direction) {
 		character.walkEnd = activeTimer + 30;
 	}
 }
+
 var debugText = new PIXI.Text("Debug");
 function displayDebugText(message) {
 	debugText.destroy();
@@ -368,15 +395,65 @@ function displayDebugText(message) {
 	app.stage.addChild(debugText);
 }
 
+var mainChar = {};
+var walkables = [];
+var collisionChars = [];
+var interactables = [];
+
+function clearScreen() {
+	// http://www.html5gamedevs.com/topic/840-remove-all-children-from-a-stage/?do=findComment&comment=4707
+	for (var i = app.stage.children.length - 1; i >= 0; i--) {	
+		app.stage.removeChild(app.stage.children[i]);
+	}
+	walkables = [];
+	collisionChars = [];
+	interactables = [];
+}
+
+// Create the lame house and set everything up
+function makeLameHouse() {
+	clearScreen();
+	// Set up the background
+	var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
+	var darkBoringFloorTiles = [];
+	var i = 0; // Works out to be 26x21
+	for (var x = 0; x < 26; x++) {
+		for (var y = 0; y < 21; y++) {
+			darkBoringFloorTiles[i] = new PIXI.Sprite(baseTiles[179]);
+			darkBoringFloorTiles[i].tag = "tile";
+			darkBoringFloorTiles[i].anchor.set(0.5);
+			darkBoringFloorTiles[i].scale.x = 1.5;
+			darkBoringFloorTiles[i].scale.y = 1.5;
+			darkBoringFloorTiles[i].x = x * 32;
+			darkBoringFloorTiles[i].y = y * 32;
+			app.stage.addChild(darkBoringFloorTiles[i]);
+			i++;
+		}
+		i++;
+	}
+	// Put in main char
+	setupMainChar(appWidth / 2, appHeight / 2, 50);
+	// Put in healer
+	var healer = getHealer(appWidth / 1.4, appHeight / 4);
+	// Put in cat
+	var cat = getCat(appWidth / 3, appHeight / 4);
+	// Setup lists
+	collisionChars = [mainChar, cat, healer];
+	interactables = [cat, healer];
+	walkables = [mainChar, cat, healer];
+}
+
+makeLameHouse();
+
 // Main loop
 app.ticker.add(function(delta) {
 	if (running) {
 		
-		if (debug) {
+		if (debug) {/*
 			displayDebugText("Global Timer: " + globalTimer + "\n" +
 							 "Active Timer: " + activeTimer + "\n" +
 							 "Last Press: " + lastPress + "\n" +
-							 "HP: " + mainChar.HP);
+							 "HP: " + mainChar.HP);*/
 		}
 		
 		if((globalTimer % 60) == 0) { // Every second
