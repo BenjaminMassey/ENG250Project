@@ -6,11 +6,12 @@ var app = new PIXI.Application(appWidth, appHeight, {backgroundColor : 0x1099bb}
 document.body.appendChild(app.view);
 var globalTimer = 0; // Updated by 1 every frame (runs at 60 fps)
 var activeTimer = 0; // Updated same as global - but only while active (not textbox)
+var houseTimer = 0; // Whole point of this project
 var running = true;
 var lastPress = 0; // Last frame a key was pressed
+var firstTime = true; // For spawning main char
+var health = 50; // Need to store globaly because bad code
 
-// FOR SOME REASON THIS DUMB THING CAN'T SEE OTHER FILES SO
-// I'M PUTTING ALL THE FUNCTIONS HERE AAAAAAAAAAAAAAAAAAAAA
 function generateFromSpritesheet(startX, startY, width, height, divX, divY, pathname) {
 	var up = [];
 	var down = [];
@@ -52,11 +53,24 @@ function generateFromTilesheet(startX, startY, width, height, divX, divY, pathna
 	}
 	return tiles;
 }
-function setupMainChar(spawnX, spawnY, startHP) {	
-	mainChar = PIXI.Sprite.fromImage('content/characters/main/Right0.png');
+function setupMainChar(spawnX, spawnY, maxHP, currentHP) {
+	if (firstTime) {
+		mainChar = PIXI.Sprite.fromImage('content/characters/main/Down0.png');
+		mainChar.direction = "down"; // What direction facing
+	}
+	else {
+		if (loc == "inside") {
+			mainChar = PIXI.Sprite.fromImage('content/characters/main/Up0.png');
+			mainChar.direction = "up"; // What direction facing
+		}
+		else {
+			mainChar = PIXI.Sprite.fromImage('content/characters/main/Down0.png');
+			mainChar.direction = "down"; // What direction facing
+		}
+	}
 	mainChar.tag = "main";
-	mainChar.maxHP = startHP;
-	mainChar.HP = mainChar.maxHP;
+	mainChar.maxHP = maxHP;
+	mainChar.HP = currentHP;
 	mainChar.textures = {};
 	mainChar.textures.up = [];
 	mainChar.textures.down = [];
@@ -76,7 +90,6 @@ function setupMainChar(spawnX, spawnY, startHP) {
 	mainChar.y = spawnY;
 	app.stage.addChild(mainChar); // Add to app panel
 	mainChar.walking = false; // Whether currently walking
-	mainChar.direction = "right"; // What direction facing
 	mainChar.walkFrame = 0; // Frame to stop walking on
 	mainChar.checkInteraction = function() {
 		// Define direction -> amount
@@ -181,6 +194,7 @@ var turnBased = {
 		this.textObject = new PIXI.Text(txt);
 		this.textObject.anchor.set(0.5);
 		this.textObject.style.fill = 0xFFFFFF;
+		this.textObject.style.align = "center";
 		this.textObject.x = appWidth / 2;
 		this.textObject.y = appHeight * 0.8;
 		app.stage.addChild(this.textObject);
@@ -221,44 +235,11 @@ var turnBased = {
 	}
 };
 
-// END OF GROSS ALL FUNCTIONS IN HERE BS
-
 // Setup keys (see keyboard.js and https://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000520.html)
 var left_key = keyboard(37);	var up_key = keyboard(38);
 var right_key = keyboard(39);	var down_key = keyboard(40);
 var x_key = keyboard(88);		var z_key = keyboard(90);
 
-/* CREATE THE BASIC BORING BACKGROUND
-
-// Setup tile sheets
-var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
-var darkBoringFloorTiles = [];
-// Works out to be 26x21
-var i = 0;
-for (var x = 0; x < 26; x++) {
-	for (var y = 0; y < 21; y++) {
-		darkBoringFloorTiles[i] = new PIXI.Sprite(baseTiles[179]);
-		darkBoringFloorTiles[i].tag = "tile";
-		darkBoringFloorTiles[i].anchor.set(0.5);
-		darkBoringFloorTiles[i].scale.x = 1.5;
-		darkBoringFloorTiles[i].scale.y = 1.5;
-		darkBoringFloorTiles[i].x = x * 32;
-		darkBoringFloorTiles[i].y = y * 32;
-		app.stage.addChild(darkBoringFloorTiles[i]);
-		i++;
-	}
-	i++;
-}
-
-*/
-
-/* SET UP MAIN CHAR AND SPAWN HER IN CENTER
-
-// Setup main character
-var mainChar = {};
-setupMainChar(appWidth / 2, appHeight / 2, 50); // See above
-
-*/
 
 // Setup kitty kat :3
 function getCat(spawnX, spawnY) {
@@ -280,18 +261,13 @@ function getCat(spawnX, spawnY) {
 			var num = Math.floor(Math.random() * 4);
 			var direction = ["up","down","left","right"][num];
 			startWalk(this, direction);
-			this.walkStart += 60;
-			this.walkEnd += 60;
+			var num2 = Math.floor(Math.random() * 60);
+			this.walkStart += 35 + num2;
+			this.walkEnd += 35 + num2;
 		}
 	}
 	return cat;
 }
-
-/* CREATE CAT AND PUT IN TOP LEFT ISH
-
-var cat = getCat(appWidth / 3, appHeight / 4);
-
-*/
 
 // Setup healer character
 function getHealer(spawnX, spawnY) {
@@ -313,17 +289,13 @@ function getHealer(spawnX, spawnY) {
 			var num = Math.floor(Math.random() * 4);
 			var direction = ["up","down","left","right"][num];
 			startWalk(this, direction);
-			this.walkStart += 60;
-			this.walkEnd += 60;
+			var num2 = Math.floor(Math.random() * 35);
+			this.walkStart += 40 + num2;
+			this.walkEnd += 40 + num2;
 		}
 	}
 	return healer;
 }
-/* CREATE HEALER AND PUT HIM IN TOP RIGHT ISH
-
-var healer = getHealer(appWidth / 1.4, appHeight / 4);
-
-*/
 
 // Enemy
 function getSkeleton(spawnX, spawnY, startHP, baseDMG) {
@@ -347,8 +319,9 @@ function getSkeleton(spawnX, spawnY, startHP, baseDMG) {
 			var num = Math.floor(Math.random() * 4);
 			var direction = ["up","down","left","right"][num];
 			startWalk(this, direction);
-			this.walkStart += 180;
-			this.walkEnd += 180;
+			var num2 = Math.floor(Math.random() * 50);
+			this.walkStart += 150 + num2;
+			this.walkEnd += 150 + num2;
 		}
 	}
 	skeleton.attack = function() {
@@ -360,21 +333,6 @@ function getSkeleton(spawnX, spawnY, startHP, baseDMG) {
 	return skeleton;
 }
 
-/* CREATE SKELEBOY AND PUT HIM TO RIGHT OF PLAYER
-
-var skeleton = getSkeleton(mainChar.x + 50, mainChar.y, 25, 5);
-
-*/
-
-/* DEFINE THE BASIC LISTS FOR SORTING
-
-// Basic unit functions
-
-var collisionChars = [mainChar, cat, skeleton, healer];
-var interactables = [cat, skeleton, healer];
-var walkables = [mainChar, cat, skeleton, healer];
-
-*/
 function startWalk(character, direction) {
 	if (!character.walking) {
 		character.walking = true;
@@ -410,40 +368,270 @@ function clearScreen() {
 	interactables = [];
 }
 
-// Create the lame house and set everything up
-function makeLameHouse() {
-	clearScreen();
+// Create the bad house and set everything up
+function makeBadHouse() {
 	// Set up the background
 	var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
-	var darkBoringFloorTiles = [];
-	var i = 0; // Works out to be 26x21
-	for (var x = 0; x < 26; x++) {
-		for (var y = 0; y < 21; y++) {
-			darkBoringFloorTiles[i] = new PIXI.Sprite(baseTiles[179]);
-			darkBoringFloorTiles[i].tag = "tile";
-			darkBoringFloorTiles[i].anchor.set(0.5);
-			darkBoringFloorTiles[i].scale.x = 1.5;
-			darkBoringFloorTiles[i].scale.y = 1.5;
-			darkBoringFloorTiles[i].x = x * 32;
-			darkBoringFloorTiles[i].y = y * 32;
-			app.stage.addChild(darkBoringFloorTiles[i]);
-			i++;
+	
+	// Works out to be 26x21
+	// Floor tiles
+	for (var x = 5; x < 21; x++) {
+		for (var y = 5; y < 16; y++) {
+			var tile = new PIXI.Sprite(baseTiles[179]);
+			tile.tag = "floorTile";
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x * 32;
+			tile.y = y * 32;
+			app.stage.addChild(tile);
 		}
-		i++;
+	}
+	// Left and right walls
+	for (var i = 0; i < 2; i++) {
+		var x = 0;
+		if (i == 0) {
+			x = 4 * 32;
+		}
+		else {
+			x = 21 * 32;
+		}
+		//console.log(x);
+		for (var y = 5; y < 16; y++) {
+			var tile = new PIXI.Sprite(baseTiles[636]);
+			tile.tag = "wallTile";
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x;
+			tile.y = y * 32;
+			tile.boundsX = 18;
+			tile.boundsY = 18;
+			app.stage.addChild(tile);
+			collisionChars[collisionChars.length] = tile;
+		}
+	}
+	// Top and bottom walls
+	for (var i = 0; i < 2; i++) {
+		var y = 0;
+		if (i == 0) {
+			y = 4 * 32;
+		}
+		else {
+			y = 16 * 32;
+		}
+		//console.log(x);
+		for (var x = 4; x < 22; x++) {
+			var tile;
+			if (!(i == 1 && tile.x > ((appWidth / 2) - 20) && tile.x < ((appWidth / 2) + 20))) {
+				tile = new PIXI.Sprite(baseTiles[636]);
+				tile.tag = "wallTile";
+			}
+			else {
+				tile = new PIXI.Sprite(baseTiles[108]);
+				tile.tag = "doorTile";
+				interactables[interactables.length] = tile;
+			}
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x * 32;
+			tile.y = y;
+			tile.boundsX = 18;
+			tile.boundsY = 18;
+			app.stage.addChild(tile);
+			collisionChars[collisionChars.length] = tile;
+		}
 	}
 	// Put in main char
-	setupMainChar(appWidth / 2, appHeight / 2, 50);
+	if(firstTime) {
+		setupMainChar(appWidth / 2, appHeight / 2, 50, 50);
+		firstTime = false;
+	}
+	else {
+		setupMainChar(430, 450, 50, health);
+	}
+	collisionChars[collisionChars.length] = mainChar;
+	walkables[walkables.length] = mainChar;
 	// Put in healer
-	var healer = getHealer(appWidth / 1.4, appHeight / 4);
+	var healer = getHealer(appWidth / 1.5, appHeight / 2.5);
+	collisionChars[collisionChars.length] = healer;
+	walkables[walkables.length] = healer;
+	interactables[interactables.length] = healer;
+}
+// Create the good house and set everything up
+function makeGoodHouse() {
+	// Set up the background
+	var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
+	
+	// Works out to be 26x21
+	// Floor tiles
+	for (var x = 5; x < 21; x++) {
+		for (var y = 5; y < 16; y++) {
+			var tile = new PIXI.Sprite(baseTiles[179]);
+			tile.tag = "floorTile";
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x * 32;
+			tile.y = y * 32;
+			app.stage.addChild(tile);
+		}
+	}
+	// Left and right walls
+	for (var i = 0; i < 2; i++) {
+		var x = 0;
+		if (i == 0) {
+			x = 4 * 32;
+		}
+		else {
+			x = 21 * 32;
+		}
+		console.log(x);
+		for (var y = 5; y < 16; y++) {
+			var tile = new PIXI.Sprite(baseTiles[636]);
+			tile.tag = "wallTile";
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x;
+			tile.y = y * 32;
+			tile.boundsX = 18;
+			tile.boundsY = 18;
+			app.stage.addChild(tile);
+			collisionChars[collisionChars.length] = tile;
+		}
+	}
+	// Top and bottom walls
+	for (var i = 0; i < 2; i++) {
+		var y = 0;
+		if (i == 0) {
+			y = 4 * 32;
+		}
+		else {
+			y = 16 * 32;
+		}
+		console.log(x);
+		for (var x = 4; x < 22; x++) {
+			var tile;
+			if (!(i == 1 && tile.x > ((appWidth / 2) - 20) && tile.x < ((appWidth / 2) + 20))) {
+				tile = new PIXI.Sprite(baseTiles[636]);
+				tile.tag = "wallTile";
+			}
+			else {
+				tile = new PIXI.Sprite(baseTiles[108]);
+				tile.tag = "doorTile";
+				interactables[interactables.length] = tile;
+			}
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x * 32;
+			tile.y = y;
+			tile.boundsX = 18;
+			tile.boundsY = 18;
+			app.stage.addChild(tile);
+			collisionChars[collisionChars.length] = tile;
+		}
+	}
+	// Put in main char
+	if(firstTime) {
+		setupMainChar(appWidth / 2, appHeight / 2, 50, 50);
+		firstTime = false;
+	}
+	else {
+		setupMainChar(430, 450, 50, health);
+	}
+	collisionChars[collisionChars.length] = mainChar;
+	walkables[walkables.length] = mainChar;
+	// Put in healer
+	var healer = getHealer(appWidth / 1.5, appHeight / 2.5);
+	collisionChars[collisionChars.length] = healer;
+	walkables[walkables.length] = healer;
+	interactables[interactables.length] = healer;
 	// Put in cat
-	var cat = getCat(appWidth / 3, appHeight / 4);
-	// Setup lists
-	collisionChars = [mainChar, cat, healer];
-	interactables = [cat, healer];
-	walkables = [mainChar, cat, healer];
+	var cat = getCat(appWidth / 3, appHeight / 3.5);
+	collisionChars[collisionChars.length] = cat;
+	walkables[walkables.length] = cat;
+	interactables[interactables.length] = cat;
+}
+// Make the outside area
+function makeOutside() {
+	// Set up the background
+	var baseTiles = generateFromTilesheet(0, 0, 1024, 1024, 32, 32, "content/environment/main/base_out_atlas.png")
+	
+	// Works out to be 26x21
+	// Floor tiles
+	for (var x = 0; x < 26; x++) {
+		for (var y = 0; y < 21; y++) {
+			var tile = new PIXI.Sprite(baseTiles[764]); // 741 was top grass //766//764//760//757
+			tile.tag = "floorTile";
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x * 32;
+			tile.y = y * 32;
+			app.stage.addChild(tile);
+		}
+	}
+	// House tiles
+	for (var x = 0; x < 9; x++) {
+		for (var y = 0; y < 9; y++) {
+			var tile;
+			if (!(y == 8 && (x == 4 || x == 5))) {
+				tile = new PIXI.Sprite(baseTiles[179]);
+				tile.tag = "houseTile";
+			}
+			else {
+				tile = new PIXI.Sprite(baseTiles[108]);
+				tile.tag = "doorTile";
+				interactables[interactables.length] = tile;
+			}
+			tile.anchor.set(0.5);
+			tile.scale.x = 1.5;
+			tile.scale.y = 1.5;
+			tile.x = x * 32;
+			tile.y = y * 32;
+			tile.boundsX = 18;
+			tile.boundsY = 18;
+			app.stage.addChild(tile);
+			collisionChars[collisionChars.length] = tile;
+		}
+	}
+	// Put in main char
+	setupMainChar(140, 310, 50, health);
+	collisionChars[collisionChars.length] = mainChar;
+	walkables[walkables.length] = mainChar;
+	// Put in skeletons
+	for (var i = 0; i < 7; i++) {
+		var x = 300 + Math.floor(Math.random() * 400);
+		var y = 20 + (90 * i);
+		var HP = 15 + Math.floor(Math.random() * 30);
+		var baseDMG = 2 + Math.floor(Math.random() * 8);
+		var skeleton = getSkeleton(x, y, HP, baseDMG);
+		collisionChars[collisionChars.length] = skeleton;
+		walkables[walkables.length] = skeleton;
+		interactables[interactables.length] = skeleton;
+	}
 }
 
-makeLameHouse();
+
+var loc = "inside"; // as opposed to outside
+var houseType;
+if (Math.random() > 0.5) {
+	houseType = "bad";
+}
+else {
+	houseType = "good";
+}
+if (houseType == "bad") {
+	makeBadHouse();
+}
+else {
+	makeGoodHouse();
+}
+//clearScreen();
+//makeOutside();
 
 // Main loop
 app.ticker.add(function(delta) {
@@ -457,6 +645,7 @@ app.ticker.add(function(delta) {
 		}
 		
 		if((globalTimer % 60) == 0) { // Every second
+			/*
 			var walkers = "Walkers: ";
 			for (var i = 0; i < walkables.length; i++) {
 				if (i < walkables.length - 1) {
@@ -467,6 +656,17 @@ app.ticker.add(function(delta) {
 				}
 			}
 			console.log(walkers);
+			var collisions = "CollisionChars: ";
+			for (var i = 0; i < collisionChars.length; i++) {
+				if (i < collisionChars.length - 1) {
+					collisions += collisionChars[i].tag + ", ";
+				}
+				else {
+					collisions += collisionChars[i].tag;
+				}
+			}
+			console.log(collisions);
+			*/
 		}
 
 		if (textBox.active) {
@@ -545,10 +745,37 @@ app.ticker.add(function(delta) {
 						}
 						if (interact.tag == "healer") {
 							if (mainChar.HP < mainChar.maxHP) {
-								textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around.", "(You are now back to " + mainChar.maxHP + " health.)"], function(){mainChar.HP=mainChar.maxHP;});
+								if (houseType == "good") {
+									textBox.create(["Oh hey there daughter!", "You look like you could use some healing...", "There ya go, all done!", "See you around.", "(You are now back to " + mainChar.maxHP + " health.)"], function(){mainChar.HP=mainChar.maxHP;});
+								}
+								else {
+									textBox.create(["I'm here to heal.", "You are now back to " + mainChar.maxHP + " health."], function(){mainChar.HP=mainChar.maxHP;});
+								}
 							}
 							else {
-								textBox.create(["Oh hey there daughter!", "Glad to see you're doing well.", "Stay safe!"], function(){});
+								if (houseType == "good") {
+									textBox.create(["Oh hey there daughter!", "Glad to see you're doing well.", "Stay safe!"], function(){});
+								}
+								else {
+									textBox.create(["I'm here to heal.", "You do not need to be healed."], function(){});
+								}
+							}
+						}
+						if (interact.tag == "doorTile") {
+							health = mainChar.HP;
+							clearScreen();
+							if (loc == "outside") {
+								loc = "inside";
+								if (houseType == "good") {
+									makeGoodHouse();
+								}
+								else {
+									makeBadHouse();
+								}
+							}
+							else {
+								loc = "outside";
+								makeOutside();
 							}
 						}
 					}
