@@ -472,7 +472,7 @@ function makeGoodHouse() {
 	// Floor tiles
 	for (var x = 5; x < 21; x++) {
 		for (var y = 5; y < 16; y++) {
-			var tile = new PIXI.Sprite(baseTiles[179]);
+			var tile = new PIXI.Sprite(baseTiles[91]); 
 			tile.tag = "floorTile";
 			tile.anchor.set(0.5);
 			tile.scale.x = 1.5;
@@ -493,7 +493,7 @@ function makeGoodHouse() {
 		}
 		console.log(x);
 		for (var y = 5; y < 16; y++) {
-			var tile = new PIXI.Sprite(baseTiles[636]);
+			var tile = new PIXI.Sprite(baseTiles[97]);
 			tile.tag = "wallTile";
 			tile.anchor.set(0.5);
 			tile.scale.x = 1.5;
@@ -519,7 +519,7 @@ function makeGoodHouse() {
 		for (var x = 4; x < 22; x++) {
 			var tile;
 			if (!(i == 1 && tile.x > ((appWidth / 2) - 20) && tile.x < ((appWidth / 2) + 20))) {
-				tile = new PIXI.Sprite(baseTiles[636]);
+				tile = new PIXI.Sprite(baseTiles[97]);
 				tile.tag = "wallTile";
 			}
 			else {
@@ -538,6 +538,27 @@ function makeGoodHouse() {
 			collisionChars[collisionChars.length] = tile;
 		}
 	}
+	// Random stuff
+	var fireplace = PIXI.Sprite.fromImage("content/environment/other/fireplace.png");
+	fireplace.anchor.set(0.5);
+	fireplace.scale.x = 1.5;
+	fireplace.scale.y = 1.5;
+	fireplace.x = appWidth / 2.5;
+	fireplace.y = 5 * 32;
+	fireplace.boundsX = 45;
+	fireplace.boundsY = 18;
+	app.stage.addChild(fireplace);
+	collisionChars[collisionChars.length] = fireplace;
+	var bed = PIXI.Sprite.fromImage("content/environment/other/bed.png");
+	bed.anchor.set(0.5);
+	bed.scale.x = 1.5;
+	bed.scale.y = 1.5;
+	bed.x = appWidth / 1.4;
+	bed.y = 7 * 32;
+	bed.boundsX = 27;
+	bed.boundsY = 25;
+	app.stage.addChild(bed);
+	collisionChars[collisionChars.length] = bed;
 	// Put in main char
 	if(firstTime) {
 		setupMainChar(appWidth / 2, appHeight / 2, 50, 50);
@@ -549,12 +570,12 @@ function makeGoodHouse() {
 	collisionChars[collisionChars.length] = mainChar;
 	walkables[walkables.length] = mainChar;
 	// Put in healer
-	var healer = getHealer(appWidth / 1.5, appHeight / 2.5);
+	var healer = getHealer(appWidth / 1.5, appHeight / 1.5);
 	collisionChars[collisionChars.length] = healer;
 	walkables[walkables.length] = healer;
 	interactables[interactables.length] = healer;
 	// Put in cat
-	var cat = getCat(appWidth / 3, appHeight / 3.5);
+	var cat = getCat(appWidth / 3, appHeight / 2);
 	collisionChars[collisionChars.length] = cat;
 	walkables[walkables.length] = cat;
 	interactables[interactables.length] = cat;
@@ -628,6 +649,7 @@ if (Math.random() > 0.5) {
 else {
 	houseType = "good";
 }
+houseType = "good"; // debug
 if (houseType == "bad") {
 	makeBadHouse();
 }
@@ -665,6 +687,8 @@ app.ticker.add(function(delta) {
 			yay.click = function() {
 				window.open("http://eng250paper.benjaminmassey.com/");
 			};
+			var url = "http://184.171.49.131:5000/submit";
+			$.getJSON(url,{type: houseType, time: houseTimer}, function(){});
 			running = false;
 		}
 		

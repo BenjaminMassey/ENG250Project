@@ -1,0 +1,2 @@
+bed: https://opengameart.org/content/lpc-house-insides
+fireplace: https://opengameart.org/content/lpc-fireplace
